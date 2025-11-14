@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+recursive-include . *.so
+recursive-include . *.pyd
+recursive-include . *.dll
+global-exclude *.pyc
+global-exclude __pycache__

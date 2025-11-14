@@ -1,0 +1,9 @@
+Things to test when done with conversion of asset handling
+
+* Reloading of assets.
+
+Add spdlog submodule for RL logging:
+
+1. Initialize git repository in overgrowth-main/overgrowth-main/
+2. Add spdlog submodule: git submodule add https://github.com/gabime/spdlog.git spdlog
+3. Include in build system

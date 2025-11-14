@@ -1,0 +1,71 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        docker:
+          - 'registry.fedoraproject.org/fedora:latest'
+          - 'quay.io/centoshyperscale/centos:stream8'
+      fail-fast: false
+
+    container: ${{ matrix.docker }}
+
+    steps:
+      - name: Set up DNF download cache
+        id: dnf-cache
+        uses: actions/cache@v3
+        with:
+          path: /var/cache/dnf
+          key: ${{ runner.os }}-dnfcache
+      - name: Install pre-requisites
+        run: dnf --assumeyes --setopt=install_weak_deps=False install
+              gcc-c++ cmake make /usr/bin/git
+              'pkgconfig(gl)' 'pkgconfig(glu)'
+              'pkgconfig(sdl2)' 'pkgconfig(SDL2_net)'
+              'pkgconfig(gtk+-2.0)' 'pkgconfig(ogg)' 'pkgconfig(vorbis)'
+              'pkgconfig(openal)' 'pkgconfig(libjpeg)'
+              'pkgconfig(bzip2)' 'pkgconfig(freetype2)'
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones speed things up
+      - name: cmake configure
+        run: cmake -S ./Projects -B ./Build
+      - name: compile with cmake
+        run: cmake --build ./Build --verbose -j4
+
+  windows:
+    strategy:
+      matrix:
+        version:
+          # - 'windows-2016' DEPRECATED unfortunately
+          - 'windows-2019'
+          - 'windows-2022'
+      fail-fast: false
+
+    runs-on: ${{ matrix.version }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones speed things up
+      - name: cmake configure
+        run: cmake -S ./Projects -B ./Build
+      - name: compile with cmake
+        run: cmake --build ./Build
+
+  macos:
+    runs-on: macos-12
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones speed things up
+      - name: cmake configure
+        run: cmake -S ./Projects -DCMAKE_OSX_DEPLOYMENT_TARGET="13.1" -B ./Build
+      - name: compile with cmake
+        run: cmake --build ./Build

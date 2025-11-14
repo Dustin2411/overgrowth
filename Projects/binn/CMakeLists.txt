@@ -1,0 +1,12 @@
+SET(SRCDIR "${CMAKE_SOURCE_DIR}/../Libraries/binn-3.0/src")
+SET(LIBDIR "${CMAKE_SOURCE_DIR}/../Libraries")
+
+INCLUDE_DIRECTORIES(
+    ${SRCDIR}/
+)
+
+SET(BINN_SRCS
+    ${SRCDIR}/binn.c
+)
+
+ADD_LIBRARY(binn STATIC ${BINN_SRCS})
