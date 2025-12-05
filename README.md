@@ -11,6 +11,21 @@ This repository lets you‥
 
 If you would like to distribute any of the original Overgrowth assets, you must obtain explicit written permission from Wolfire Games.
 
+## 🤖 Reinforcement Learning Integration (New!)
+This fork integrates a **Reinforcement Learning (RL) Environment** directly into the Overgrowth engine!
+
+**What you can do:**
+- **Train AI Agents**: Use Python (Stable Baselines3, Gymnasium) to train NPCs to fight, navigate, and survive.
+- **Control NPCs**: The RL environment connects directly to the game's `MovementObject`, giving your agent control over movement, attacks, and blocks.
+- **Cross-Platform**: Works on Windows and Linux!
+
+**Getting Started:**
+1.  **Build**: Follow the instructions in `linux_setup.md` (for Linux) or `COMPILING.md` (for Windows).
+2.  **Train**: Run `python train_agent.py` to start training a PPO agent.
+3.  **Watch**: See your agent learn in real-time!
+
+See `README_RL.md` for full documentation on the RL module.
+
 ## Compiling
 [COMPILING.md] contains instructions on compiling and running the commercial Overgrowth game using the open source code.
 
