@@ -1,4 +1,8 @@
 
+if(POLICY CMP0115)
+	cmake_policy(SET CMP0115 NEW)
+endif()
+
 INCLUDE_DIRECTORIES(
 	${BULLET_PHYSICS_SOURCE_DIR}/src
 )
@@ -26,15 +30,17 @@ SET(Bullet3Common_HDRS
 	b3Transform.h
 	b3TransformUtil.h
 	b3Vector3.h
-	shared/b3Float4
+	shared/b3Float4.h
 	shared/b3Int2.h
 	shared/b3Int4.h
 	shared/b3Mat3x3.h
-	shared/b3PlatformDefinitions
+	shared/b3PlatformDefinitions.h
 	shared/b3Quat.h
 )
 
-ADD_LIBRARY(Bullet3Common ${Bullet3Common_SRCS} ${Bullet3Common_HDRS})
+# Do not add header files to the library source list to avoid CMP0115 warnings;
+# keep the header list for installation/IDE use and for Apple framework PUBLIC_HEADER.
+ADD_LIBRARY(Bullet3Common ${Bullet3Common_SRCS})
 SET_TARGET_PROPERTIES(Bullet3Common PROPERTIES VERSION ${BULLET_VERSION})
 SET_TARGET_PROPERTIES(Bullet3Common PROPERTIES SOVERSION ${BULLET_VERSION})
 

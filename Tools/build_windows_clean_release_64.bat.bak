@@ -1,7 +1,7 @@
 @ECHO OFF
 SETLOCAL
 
-SET BUILD_DIR=BuildRL64
+SET BUILD_DIR=BuildRelease64
 SET BUILD_TARGET_PATH=%~dp0..\%BUILD_DIR%
 
 IF EXIST "%BUILD_TARGET_PATH%" RMDIR /Q /S "%BUILD_TARGET_PATH%"
@@ -10,14 +10,13 @@ MKDIR "%BUILD_TARGET_PATH%"
 REM Build RL interface if enabled
 IF "%OG_RL%"=="ON" (
     ECHO Building RL interface...
-    PUSHD "%BUILD_TARGET_PATH%"
-
+    PUSHD "%~dp0..\rl_interface"
     REM Try VS2022
-    cmake -G "Visual Studio 17 2022" -A x64 ..
+    cmake -DOG_RL=ON -G "Visual Studio 17 2022" -A x64 ..
     IF %ERRORLEVEL% NEQ 0 (
         REM Fallback to VS2019
         ECHO Fallback to Visual Studio 16 2019
-        cmake -G "Visual Studio 16 2019" -A x64 ..
+        cmake -DOG_RL=ON -G "Visual Studio 16 2019" -A x64 ..
     )
     IF %ERRORLEVEL% NEQ 0 (
         ECHO Error: CMake configuration for RL interface failed
@@ -28,34 +27,23 @@ IF "%OG_RL%"=="ON" (
         ECHO Error: Build for RL interface failed
         EXIT /B %ERRORLEVEL%
     )
-
-    REM Verify and copy DLL
+    REM Copy DLL
     IF EXIST "Release\og_env.pyd" (
-        ECHO Copying og_env.pyd to ..\python\
         COPY "Release\og_env.pyd" "%~dp0..\python\"
-        IF %ERRORLEVEL% EQU 0 (
-            ECHO Successfully copied og_env.pyd
-        ) ELSE (
+        IF %ERRORLEVEL% NEQ 0 (
             ECHO Error: Copying og_env.pyd failed
             EXIT /B %ERRORLEVEL%
         )
     ) ELSE (
-        ECHO Error: Release\og_env.pyd not found after build
-        EXIT /B 1
+        ECHO Warning: og_env.pyd not found
     )
     POPD
 ) ELSE (
     ECHO Skipping RL interface build (OG_RL is not ON)
 )
 
-PUSHD "%~dp0..\%BUILD_DIR%"
-REM Try VS2022
-cmake ../Projects -G "Visual Studio 17 2022" -A x64
-IF %ERRORLEVEL% NEQ 0 (
-    REM Fallback to VS2019
-    ECHO Fallback to Visual Studio 16 2019
-    cmake ../Projects -G "Visual Studio 16 2019" -A x64
-)
+PUSHD "%BUILD_TARGET_PATH%"
+cmake ../Projects -G "Visual Studio 15 2017 Win64"
 CD ..
 cmake --build "%BUILD_DIR%" --config Release
 POPD

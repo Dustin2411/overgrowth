@@ -1,0 +1,26 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20251114111430
+Username: DUST2411\jobsa
+RunAs User: DUST2411\jobsa
+Configuration Name: 
+Machine: DUST2411 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -Command Start-Transcript -Path build_log.txt -IncludeInvocationHeader; cmd.exe /c build_windows_clean_release_64.bat; Stop-Transcript
+Process ID: 24616
+PSVersion: 5.1.26100.7019
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7019
+BuildVersion: 10.0.26100.7019
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is build_log.txt
+Specify --help for usage, or press the help button on the CMake GUI.
+Error: not a CMake build directory (missing CMakeCache.txt)
+done
+**********************
+Windows PowerShell transcript end
+End time: 20251114111431
+**********************

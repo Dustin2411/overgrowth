@@ -13,13 +13,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #-----------------------------------------------------------------------------
-CMAKE_MINIMUM_REQUIRED(VERSION 3.5) #Version of cmake in steam-runtime
+cmake_minimum_required(VERSION 3.10...3.26) #Version of cmake in steam-runtime
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 PROJECT(Overgrowth)
+
+include_directories(../Libraries/spdlog/include)
 
 OPTION(FATAL_LOG_ASSERTS "Have LOG_ASSERTS* trigger a normal assert() call" OFF)
 
@@ -37,7 +39,17 @@ INCLUDE(ExternalProject)
 
 IF(OG_RL)
     find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development)
-    find_package(NumPy 1.20 REQUIRED)
+    include_directories(${Python_INCLUDE_DIRS})
+    execute_process(
+        COMMAND ${Python_EXECUTABLE} -c "import numpy; print(numpy.get_include())"
+        OUTPUT_VARIABLE NUMPY_INCLUDE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE NUMPY_FIND_RESULT
+    )
+    if(NOT NUMPY_FIND_RESULT EQUAL 0)
+        message(FATAL_ERROR "NumPy not found or not importable in Python ${Python_EXECUTABLE}")
+    endif()
+    include_directories(${NUMPY_INCLUDE_DIR})
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../external/pybind11 pybind11)
 ENDIF()
 
@@ -278,7 +290,9 @@ IF(LINUX)
 
  IF(OG_RL)
      # Add compiler flags to suppress PyBind11 warnings
-     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-variable -fvisibility=hidden -Wno-pedantic")
+     IF(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-variable -fvisibility=hidden -Wno-pedantic")
+     ENDIF()
  ENDIF()
 
 #Create subprojects that have their own CMakeLists
@@ -751,7 +765,7 @@ ADD_LIBRARY( tinyxml STATIC
     ${TINYXML_SRCS}
 ) 
 
-SET_PROPERTY(TARGET tinyxml PROPERTY FOLDER "Support")
+set_property(TARGET tinyxml PROPERTY FOLDER "Support")
 
 file(GLOB TREX_SRCS
     ${LIBDIR}/trex/trex.cpp
@@ -764,7 +778,7 @@ ADD_LIBRARY( trex STATIC
 
 SET_PROPERTY(TARGET trex PROPERTY FOLDER "Support")
 
-SET(LOG_LEVEL 4 CACHE INTEGER "Set Logging level from 1=Fatal to 6=Spam, default 4=Info")
+SET(LOG_LEVEL 4 CACHE STRING "Set Logging level from 1=Fatal to 6=Spam, default 4=Info")
 MESSAGE(STATUS "Log level: ${LOG_LEVEL}")
 ADD_DEFINITIONS(-DLOG_LEVEL=${LOG_LEVEL})
 
@@ -1177,16 +1191,52 @@ IF(BUILD_OVERGROWTH)
     ENDIF()
 
     IF(OG_RL)
+        add_library(overgrowth_core STATIC
+            ${SRCDIR}/RL/og_env_bindings.cpp
+            ${SRCDIR}/RL/og_rl_interface.cpp
+            ${SRCDIR}/RL/overgrowth_env.cpp
+            ${SRCDIR}/RL/overgrowth_env.hpp
+            ${SRCDIR}/RL/OvergrowthEnv.h
+        )
+
+        target_link_libraries(overgrowth_core PRIVATE
+            OvergrowthCompat
+            OvergrowthLogging
+            BulletDynamics
+            BulletCollision
+            BulletWorldImporter
+            BulletFileLoader
+            LinearMath
+            ${Python_LIBRARIES}
+        )
+
+        target_include_directories(overgrowth_core PUBLIC
+            ${pybind11_INCLUDE_DIR}
+            ${Python_INCLUDE_DIRS}
+        )
+    
         # Create og_rl_interface target
         pybind11_add_module(og_rl_interface MODULE
             # Add source files here - placeholder for now
             ${SRCDIR}/RL/og_rl_interface.cpp
         )
 
+        target_include_directories(og_rl_interface PUBLIC ${Python_INCLUDE_DIRS})
+
+        IF(MSVC)
+            target_compile_options(og_rl_interface PRIVATE /utf-8)
+        ENDIF()
+
         TARGET_LINK_LIBRARIES(og_rl_interface PRIVATE
             overgrowth_core
-            bullet::bullet
+            BulletDynamics
+            BulletCollision
+            BulletWorldImporter
+            BulletFileLoader
+            LinearMath
         )
+
+        target_link_libraries(og_rl_interface PRIVATE ${Python_LIBRARIES})
 
         install(TARGETS og_rl_interface LIBRARY DESTINATION lib)
     ENDIF()

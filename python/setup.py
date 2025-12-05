@@ -7,6 +7,9 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import sys
 import os
+import numpy
+
+NUMPY_INCLUDE_DIR = numpy.get_include().replace('\\', '/')
 
 class CMakeExtension(Extension):
     def __init__(self, name):
@@ -25,14 +28,37 @@ class CMakeBuild(build_ext):
         build_temp = os.path.abspath(self.build_temp)
         os.makedirs(build_temp, exist_ok=True)
 
-        # Configure with cmake
-        self.spawn([
+        # Log current working directory and source path
+        cwd = os.getcwd()
+        source_dir = '../Projects'  # Go up to Projects directory
+        self.announce(f"Current working directory: {cwd}", level=3)
+        self.announce(f"Source directory: {source_dir}", level=3)
+        self.announce(f"Build directory: {build_temp}", level=3)
+
+        # Check if CMakeLists.txt exists in source directory
+        cmake_lists_path = os.path.join(source_dir, 'CMakeLists.txt')
+        if not os.path.exists(cmake_lists_path):
+            self.announce(f"ERROR: CMakeLists.txt not found at {cmake_lists_path}", level=3)
+        else:
+            self.announce(f"Found CMakeLists.txt at {cmake_lists_path}", level=3)
+
+        # Configure with cmake from the correct source directory (overgrowth-main root)
+        original_cmake_args = [
             'cmake',
-            '-S', os.path.dirname(os.path.abspath(__file__)),
+            '-S', source_dir,  # Changed from os.path.dirname(os.path.abspath(__file__)) to go up one level
             '-B', build_temp,
             '-DOG_RL=ON',
             '-DPYTHON_EXECUTABLE=' + sys.executable
-        ])
+        ]
+        self.announce(f"Original cmake args: {original_cmake_args}", level=3)
+        self.announce(f"NUMPY_INCLUDE_DIR set to: {NUMPY_INCLUDE_DIR}", level=3)
+        modified_cmake_args = original_cmake_args + [f'-DNumPy_INCLUDE_DIR={NUMPY_INCLUDE_DIR}']
+        self.announce(f"Modified cmake args: {modified_cmake_args}", level=3)
+        try:
+            self.spawn(modified_cmake_args)
+        except Exception as e:
+            self.announce(f"CMake configure failed: {e}", level=3)
+            raise
 
         # Build
         self.spawn(['cmake', '--build', build_temp])
