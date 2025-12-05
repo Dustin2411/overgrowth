@@ -46,6 +46,18 @@ class OvergrowthGymEnv(gym.Env):
     def close(self):
         self.env.close()
 
+    def set_game_speed(self, speed):
+        """
+        Sets the game simulation speed (e.g., 2.0 for 2x speed).
+        """
+        self.env.set_game_speed(float(speed))
+
+    def set_enemy_property(self, name, value):
+        """
+        Sets a float property on the enemy's script (e.g., 'aggression').
+        """
+        self.env.set_enemy_script_float(name, float(value))
+
 if __name__ == "__main__":
     # Test the wrapper
     env = OvergrowthGymEnv()

@@ -97,6 +97,10 @@ public:
     void set_log_level(const std::string& level);
     void set_npc(MovementObject* npc);
     void set_enemy(MovementObject* enemy);
+    
+    // Expert methods
+    void set_game_speed(float speed);
+    void set_enemy_script_float(const std::string& var_name, float value);
 
     // Core attributes
     py::object action_space;

@@ -6,6 +6,7 @@
 #ifdef OG_RL_BUILD
 #include "overgrowth_env.hpp"
 #include "Objects/movementobject.h"
+#include "Main/engine.h"
 
 #include <cmath>
 #include <algorithm>
@@ -235,6 +236,24 @@ void OvergrowthEnv::set_log_level(const std::string& level) {
  */
 void OvergrowthEnv::set_enemy(MovementObject* enemy) {
     enemy_ = enemy;
+}
+
+/**
+ * @brief Sets game speed (Time Scaling)
+ */
+void OvergrowthEnv::set_game_speed(float speed) {
+    if (Engine::Instance()) {
+        Engine::Instance()->SetGameSpeed(speed, true);
+    }
+}
+
+/**
+ * @brief Sets a float variable in the enemy's AngelScript (Dynamic Difficulty)
+ */
+void OvergrowthEnv::set_enemy_script_float(const std::string& var_name, float value) {
+    if (enemy_) {
+        enemy_->ASSetFloatVar(var_name, value);
+    }
 }
 
 /**

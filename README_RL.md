@@ -21,7 +21,9 @@ The agent now "sees" the enemy:
 The reward function encourages fighting:
 - **Damage Dealt**: Positive reward for hurting the enemy.
 - **Victory**: Large bonus for winning.
-- **Proximity**: Shaping reward for moving towards the opponent.
+### 3. Expert Features
+- **Time Scaling**: Speed up training with `env.set_game_speed(5.0)`.
+- **Dynamic Difficulty**: Adjust enemy AI on the fly with `env.set_enemy_property("aggression", 1.0)`.
 
 ## Setup & Build
 
