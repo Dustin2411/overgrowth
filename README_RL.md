@@ -25,7 +25,10 @@ The reward function encourages fighting:
 - **Time Scaling**: Speed up training with `env.set_game_speed(5.0)`.
 - **Dynamic Difficulty**: Adjust enemy AI on the fly with `env.set_enemy_property("aggression", 1.0)`.
 
-## Setup & Build
+### 4. Grandmaster Features (Self-Play)
+- **Multi-Agent Control**: Control both the agent and the enemy with `env.set_enemy_action(action)`.
+- **Symmetric Vision**: Get the enemy's perspective with `env.get_enemy_observation()`.
+- **Self-Play Training**: Run `python train_self_play.py` to train a "Challenger" model against a "Champion" model.
 
 ### Prerequisites
 - Python 3.7+

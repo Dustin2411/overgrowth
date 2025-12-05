@@ -58,6 +58,20 @@ class OvergrowthGymEnv(gym.Env):
         """
         self.env.set_enemy_script_float(name, float(value))
 
+    def set_enemy_action(self, action):
+        """
+        Sets the action for the enemy agent (Self-Play).
+        """
+        self.env.set_enemy_action(int(action))
+
+    def get_enemy_observation(self):
+        """
+        Gets the observation from the enemy's perspective (Self-Play).
+        Returns numpy array of shape (18,).
+        """
+        obs = self.env.get_enemy_observation()
+        return np.array(obs, dtype=np.float32)
+
 if __name__ == "__main__":
     # Test the wrapper
     env = OvergrowthGymEnv()

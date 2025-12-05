@@ -257,6 +257,72 @@ void OvergrowthEnv::set_enemy_script_float(const std::string& var_name, float va
 }
 
 /**
+ * @brief Sets the action for the enemy (Self-Play)
+ */
+void OvergrowthEnv::set_enemy_action(int action_id) {
+    if (enemy_) {
+        // Same mapping as update_state but for enemy
+        switch(action_id) {
+            case 0: enemy_->InputFromAngelScript("forward"); break;
+            case 1: enemy_->InputFromAngelScript("back"); break;
+            case 2: enemy_->InputFromAngelScript("left"); break;
+            case 3: enemy_->InputFromAngelScript("right"); break;
+            case 4: enemy_->InputFromAngelScript("jump"); break;
+            case 5: enemy_->InputFromAngelScript("crouch"); break;
+            case 6: enemy_->InputFromAngelScript("attack"); break;
+            case 7: enemy_->InputFromAngelScript("block"); break;
+            case 8: enemy_->InputFromAngelScript("throw"); break;
+            case 9: enemy_->InputFromAngelScript("grab"); break;
+        }
+    }
+}
+
+/**
+ * @brief Gets observation from enemy's perspective (Self-Play)
+ */
+py::array_t<float> OvergrowthEnv::get_enemy_observation() const {
+    if (enemy_ && npc_) {
+        std::vector<float> obs;
+        obs.reserve(18);
+        
+        // 1. Self State (Enemy is "Self" here)
+        obs.push_back(enemy_->position.x);
+        obs.push_back(enemy_->position.y);
+        obs.push_back(enemy_->position.z);
+        obs.push_back(enemy_->velocity.x);
+        obs.push_back(enemy_->velocity.y);
+        obs.push_back(enemy_->velocity.z);
+        obs.push_back(enemy_->GetTempHealth());
+        obs.push_back(enemy_->facing.x);
+        obs.push_back(enemy_->facing.y);
+        obs.push_back(enemy_->facing.z);
+
+        // 2. Enemy State (NPC is "Enemy" here)
+        // Relative Position (NPC - Enemy)
+        obs.push_back(npc_->position.x - enemy_->position.x);
+        obs.push_back(npc_->position.y - enemy_->position.y);
+        obs.push_back(npc_->position.z - enemy_->position.z);
+        
+        // Relative Velocity
+        obs.push_back(npc_->velocity.x - enemy_->velocity.x);
+        obs.push_back(npc_->velocity.y - enemy_->velocity.y);
+        obs.push_back(npc_->velocity.z - enemy_->velocity.z);
+
+        // Distance
+        float dist = glm::distance(enemy_->position, npc_->position);
+        obs.push_back(dist);
+
+        // Enemy Health (NPC's health)
+        obs.push_back(npc_->GetTempHealth());
+        
+        return py::cast(obs);
+    }
+    
+    // Fallback
+    return get_observation();
+}
+
+/**
  * @brief Gets current observation
  */
 py::array_t<float> OvergrowthEnv::get_observation() const {

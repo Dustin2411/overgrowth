@@ -102,6 +102,10 @@ public:
     void set_game_speed(float speed);
     void set_enemy_script_float(const std::string& var_name, float value);
 
+    // Grandmaster methods (Self-Play)
+    void set_enemy_action(int action_id);
+    py::array_t<float> get_enemy_observation() const;
+
     // Core attributes
     py::object action_space;
     py::object observation_space;
