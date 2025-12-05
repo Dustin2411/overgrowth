@@ -111,6 +111,9 @@ public:
     void stop_recording();
     void log_transition(const std::vector<float>& obs, int action);
 
+    // Beyond Godlike methods (Domain Randomization)
+    void set_gravity(float x, float y, float z);
+
     // Core attributes
     py::object action_space;
     py::object observation_space;

@@ -84,6 +84,13 @@ class OvergrowthGymEnv(gym.Env):
         """
         self.env.stop_recording()
 
+    def set_gravity(self, x, y, z):
+        """
+        Sets the global gravity vector (Domain Randomization).
+        Default is usually (0, -9.8, 0).
+        """
+        self.env.set_gravity(float(x), float(y), float(z))
+
 if __name__ == "__main__":
     # Test the wrapper
     env = OvergrowthGymEnv()

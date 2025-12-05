@@ -1,14 +1,3 @@
-# Overgrowth RL Environment
-
-This project implements a Reinforcement Learning (RL) environment for the Overgrowth NPC project, featuring a custom C++ simulation with Python bindings.
-
-## Features
-- **Custom C++ Environment**: High-performance simulation logic in C++.
-- **Python Bindings**: Seamless integration with Python via `pybind11`.
-- **Gymnasium Compatibility**: Includes a wrapper (`og_env_wrapper.py`) for compatibility with standard RL libraries like Stable Baselines3.
-- **Rendering**: Supports RGB array rendering for visualization.
-- **Advanced Features**: Includes relative observation space (enemy tracking) and combat-based rewards.
-
 ## Advanced Features (New!)
 The environment now supports advanced combat training:
 

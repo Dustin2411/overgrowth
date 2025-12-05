@@ -7,6 +7,7 @@
 #include "overgrowth_env.hpp"
 #include "Objects/movementobject.h"
 #include "Main/engine.h"
+#include "Physics/physics.h"
 
 #include <cmath>
 #include <algorithm>
@@ -363,6 +364,17 @@ void OvergrowthEnv::log_transition(const std::vector<float>& obs, int action) {
     if (is_recording_) {
         recorded_obs_.push_back(obs);
         recorded_actions_.push_back(action);
+    }
+}
+
+/**
+ * @brief Sets global gravity (Domain Randomization)
+ */
+void OvergrowthEnv::set_gravity(float x, float y, float z) {
+    if (Physics::Instance()) {
+        Physics::Instance()->gravity = vec3(x, y, z);
+        // Also update Bullet world if needed, but Physics::Instance()->gravity is usually the source of truth
+        // The grep showed BulletObject::SetGravity reads from Physics::Instance()->gravity
     }
 }
 
