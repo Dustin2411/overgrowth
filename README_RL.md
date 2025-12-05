@@ -66,19 +66,6 @@ model.learn(total_timesteps=10000)
 
 # Save model
 model.save("ppo_overgrowth")
-```
-
-## Demos
-- **Verification**: Run `python verify_og_env.py` to test basic functionality.
-- **Training Demo**: Run `python train_agent.py` to train a PPO agent and generate a GIF of the agent in action (`agent_demo.gif`).
-
-## Project Structure
-- `overgrowth-main/Source/RL/`: C++ source files (`overgrowth_env.cpp`, `overgrowth_env.hpp`, `og_env_bindings.cpp`).
-- `og_env_wrapper.py`: Gymnasium wrapper for the environment.
-- `setup.py`: Build configuration script.
-- `train_agent.py`: Example script for training and rendering.
-
-## Game Integration (Next Steps)
 The current environment is a **standalone simulation** for testing the RL pipeline. To train an NPC to fight in the actual game:
 1.  Read the `integration_plan.md` artifact I created.
 2.  You must build the full Overgrowth game engine (not just this module).
