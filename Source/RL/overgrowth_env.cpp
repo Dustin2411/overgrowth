@@ -41,7 +41,8 @@ OvergrowthEnv::OvergrowthEnv() {
 
     // Set up Gymnasium-compatible spaces
     action_space = py::cast(12); // Discrete(12)
-    observation_space = py::dict("shape"_a = py::make_tuple(10), "dtype"_a = py::dtype::of<float>());
+    // 10 (self) + 3 (rel pos) + 3 (rel vel) + 1 (dist) + 1 (enemy health) = 18
+    observation_space = py::dict("shape"_a = py::make_tuple(18), "dtype"_a = py::dtype::of<float>());
 
     // Set up metadata
     metadata = py::dict();
@@ -101,7 +102,7 @@ std::tuple<py::array_t<float>, py::dict> OvergrowthEnv::reset(std::optional<uint
     }
 
     // Reset state
-    current_obs_ = std::vector<float>(10, 0.0f);
+    current_obs_ = std::vector<float>(18, 0.0f);
     cum_reward_ = 0.0f;
     terminated_ = false;
     truncated_ = false;
@@ -230,10 +231,10 @@ void OvergrowthEnv::set_log_level(const std::string& level) {
 }
 
 /**
- * @brief Sets the NPC to control
+ * @brief Sets the Enemy to track
  */
-void OvergrowthEnv::set_npc(MovementObject* npc) {
-    npc_ = npc;
+void OvergrowthEnv::set_enemy(MovementObject* enemy) {
+    enemy_ = enemy;
 }
 
 /**
@@ -242,21 +243,42 @@ void OvergrowthEnv::set_npc(MovementObject* npc) {
 py::array_t<float> OvergrowthEnv::get_observation() const {
     if (npc_) {
         std::vector<float> obs;
-        obs.reserve(10);
-        // Position
+        obs.reserve(18);
+        
+        // 1. Self State (10 dims)
         obs.push_back(npc_->position.x);
         obs.push_back(npc_->position.y);
         obs.push_back(npc_->position.z);
-        // Velocity
         obs.push_back(npc_->velocity.x);
         obs.push_back(npc_->velocity.y);
         obs.push_back(npc_->velocity.z);
-        // Health
         obs.push_back(npc_->GetTempHealth());
-        // Facing
         obs.push_back(npc_->facing.x);
         obs.push_back(npc_->facing.y);
         obs.push_back(npc_->facing.z);
+
+        // 2. Enemy State (8 dims)
+        if (enemy_) {
+            // Relative Position
+            obs.push_back(enemy_->position.x - npc_->position.x);
+            obs.push_back(enemy_->position.y - npc_->position.y);
+            obs.push_back(enemy_->position.z - npc_->position.z);
+            
+            // Relative Velocity
+            obs.push_back(enemy_->velocity.x - npc_->velocity.x);
+            obs.push_back(enemy_->velocity.y - npc_->velocity.y);
+            obs.push_back(enemy_->velocity.z - npc_->velocity.z);
+
+            // Distance
+            float dist = glm::distance(npc_->position, enemy_->position);
+            obs.push_back(dist);
+
+            // Enemy Health
+            obs.push_back(enemy_->GetTempHealth());
+        } else {
+            // Padding if no enemy
+            for(int i=0; i<8; ++i) obs.push_back(0.0f);
+        }
         
         return py::cast(obs);
     }
@@ -273,20 +295,32 @@ py::array_t<float> OvergrowthEnv::get_observation() const {
  * @brief Computes reward for the given action
  */
 float OvergrowthEnv::compute_reward(int action_id) {
-    // Simple reward function
     float reward = 0.0f;
 
-    // Reward for action variety
-    static std::unordered_set<int> actions_taken;
-    if (actions_taken.find(action_id) == actions_taken.end()) {
-        reward += 0.1f;
-        actions_taken.insert(action_id);
+    if (npc_ && enemy_) {
+        // 1. Damage Dealt (Positive)
+        // Note: This requires tracking previous health. For now, we assume direct access or event-based.
+        // Simplified: Reward for being close and attacking
+        float dist = glm::distance(npc_->position, enemy_->position);
+        if (dist < 2.0f && action_id == 6) { // Attack action
+            reward += 0.5f;
+        }
+
+        // 2. Proximity Reward (Shaping)
+        if (dist < 5.0f) {
+            reward += 0.01f * (5.0f - dist);
+        }
+
+        // 3. Health Check (Victory/Defeat)
+        if (enemy_->GetTempHealth() <= 0.0f) reward += 10.0f; // Win
+        if (npc_->GetTempHealth() <= 0.0f) reward -= 10.0f;   // Lose
+        
+        return reward;
     }
 
-    // Small random reward
+    // Fallback random reward for testing
     std::uniform_real_distribution<float> dist(-0.1f, 0.1f);
     reward += dist(rng_);
-
     cum_reward_ += reward;
     return reward;
 }

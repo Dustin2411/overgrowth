@@ -96,6 +96,7 @@ public:
     void set_deterministic(bool deterministic);
     void set_log_level(const std::string& level);
     void set_npc(MovementObject* npc);
+    void set_enemy(MovementObject* enemy);
 
     // Core attributes
     py::object action_space;
@@ -130,6 +131,7 @@ private:
     bool deterministic_;
     std::vector<std::pair<std::string, double>> profiling_data_;
     MovementObject* npc_ = nullptr;
+    MovementObject* enemy_ = nullptr;
 
     // Helper methods
     py::array_t<float> get_observation() const;

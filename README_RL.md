@@ -7,6 +7,21 @@ This project implements a Reinforcement Learning (RL) environment for the Overgr
 - **Python Bindings**: Seamless integration with Python via `pybind11`.
 - **Gymnasium Compatibility**: Includes a wrapper (`og_env_wrapper.py`) for compatibility with standard RL libraries like Stable Baselines3.
 - **Rendering**: Supports RGB array rendering for visualization.
+- **Advanced Features**: Includes relative observation space (enemy tracking) and combat-based rewards.
+
+## Advanced Features (New!)
+The environment now supports advanced combat training:
+
+### 1. Enhanced Observation Space (18 Dimensions)
+The agent now "sees" the enemy:
+- **Self (10)**: Position (3), Velocity (3), Health (1), Facing (3).
+- **Enemy (8)**: Relative Position (3), Relative Velocity (3), Distance (1), Enemy Health (1).
+
+### 2. Combat Rewards
+The reward function encourages fighting:
+- **Damage Dealt**: Positive reward for hurting the enemy.
+- **Victory**: Large bonus for winning.
+- **Proximity**: Shaping reward for moving towards the opponent.
 
 ## Setup & Build
 
