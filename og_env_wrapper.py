@@ -72,6 +72,18 @@ class OvergrowthGymEnv(gym.Env):
         obs = self.env.get_enemy_observation()
         return np.array(obs, dtype=np.float32)
 
+    def start_recording(self, filename):
+        """
+        Starts recording transitions to a file (Imitation Learning).
+        """
+        self.env.start_recording(filename)
+
+    def stop_recording(self):
+        """
+        Stops recording and saves the dataset.
+        """
+        self.env.stop_recording()
+
 if __name__ == "__main__":
     # Test the wrapper
     env = OvergrowthGymEnv()

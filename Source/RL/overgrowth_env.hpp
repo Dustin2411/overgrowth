@@ -106,6 +106,11 @@ public:
     void set_enemy_action(int action_id);
     py::array_t<float> get_enemy_observation() const;
 
+    // Godlike methods (Imitation Learning)
+    void start_recording(const std::string& filename);
+    void stop_recording();
+    void log_transition(const std::vector<float>& obs, int action);
+
     // Core attributes
     py::object action_space;
     py::object observation_space;
@@ -140,6 +145,12 @@ private:
     std::vector<std::pair<std::string, double>> profiling_data_;
     MovementObject* npc_ = nullptr;
     MovementObject* enemy_ = nullptr;
+    
+    // Recording state
+    bool is_recording_ = false;
+    std::string recording_filename_;
+    std::vector<std::vector<float>> recorded_obs_;
+    std::vector<int> recorded_actions_;
 
     // Helper methods
     py::array_t<float> get_observation() const;

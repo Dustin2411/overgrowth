@@ -14,6 +14,10 @@
 #include <numeric>
 #include <random>
 #include <unordered_set>
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 using namespace py::literals;
 
@@ -320,6 +324,46 @@ py::array_t<float> OvergrowthEnv::get_enemy_observation() const {
     
     // Fallback
     return get_observation();
+}
+
+/**
+ * @brief Starts recording transitions (Imitation Learning)
+ */
+void OvergrowthEnv::start_recording(const std::string& filename) {
+    recording_filename_ = filename;
+    is_recording_ = true;
+    recorded_obs_.clear();
+    recorded_actions_.clear();
+    std::cout << "[OvergrowthEnv] Started recording to " << filename << std::endl;
+}
+
+/**
+ * @brief Stops recording and saves to file
+ */
+void OvergrowthEnv::stop_recording() {
+    if (!is_recording_) return;
+    
+    is_recording_ = false;
+    
+    // Save to JSON
+    json j;
+    j["observations"] = recorded_obs_;
+    j["actions"] = recorded_actions_;
+    
+    std::ofstream o(recording_filename_);
+    o << j << std::endl;
+    
+    std::cout << "[OvergrowthEnv] Saved " << recorded_obs_.size() << " transitions to " << recording_filename_ << std::endl;
+}
+
+/**
+ * @brief Logs a transition
+ */
+void OvergrowthEnv::log_transition(const std::vector<float>& obs, int action) {
+    if (is_recording_) {
+        recorded_obs_.push_back(obs);
+        recorded_actions_.push_back(action);
+    }
 }
 
 /**

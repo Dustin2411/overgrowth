@@ -30,7 +30,10 @@ The reward function encourages fighting:
 - **Symmetric Vision**: Get the enemy's perspective with `env.get_enemy_observation()`.
 - **Self-Play Training**: Run `python train_self_play.py` to train a "Challenger" model against a "Champion" model.
 
-### Prerequisites
+### 5. Godlike Features (Imitation Learning)
+- **Headless Mode**: Run the game with `--disable-rendering` for 100x speedup.
+- **Recording**: Run `python record_demo.py` to capture gameplay data.
+- **Behavior Cloning**: Run `python pretrain_agent.py` to learn from the recorded data.
 - Python 3.7+
 - C++ Compiler (MSVC on Windows)
 - CMake (for fetching dependencies)
