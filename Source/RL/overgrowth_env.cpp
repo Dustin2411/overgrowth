@@ -6,8 +6,7 @@
 #ifdef OG_RL_BUILD
 #include "overgrowth_env.hpp"
 #include "Objects/movementobject.h"
-#include "Main/engine.h"
-#include "Physics/physics.h"
+// Note: engine.h and physics.h removed to avoid OpenGL dependencies
 
 #include <cmath>
 #include <algorithm>
@@ -16,11 +15,16 @@
 #include <random>
 #include <unordered_set>
 #include <fstream>
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
 
 using namespace py::literals;
+
+// Helper function to compute distance between two vec3 positions
+inline float compute_distance(const vec3& a, const vec3& b) {
+    float dx = a.x() - b.x();
+    float dy = a.y() - b.y();
+    float dz = a.z() - b.z();
+    return std::sqrt(dx*dx + dy*dy + dz*dz);
+}
 
 // Static member definitions
 std::shared_ptr<OvergrowthEnv> OvergrowthEnv::instance_ = nullptr;
@@ -37,7 +41,7 @@ OvergrowthEnv::OvergrowthEnv() {
     rng_.seed(rd());
 
     // Initialize state
-    current_obs_ = std::vector<float>(10, 0.0f); // 10-dimensional observation
+    current_obs_ = std::vector<float>(18, 0.0f); // 18-dimensional observation
     cum_reward_ = 0.0f;
     terminated_ = false;
     truncated_ = false;
@@ -268,16 +272,16 @@ void OvergrowthEnv::set_enemy_action(int action_id) {
     if (enemy_) {
         // Same mapping as update_state but for enemy
         switch(action_id) {
-            case 0: enemy_->InputFromAngelScript("forward"); break;
-            case 1: enemy_->InputFromAngelScript("back"); break;
-            case 2: enemy_->InputFromAngelScript("left"); break;
-            case 3: enemy_->InputFromAngelScript("right"); break;
-            case 4: enemy_->InputFromAngelScript("jump"); break;
-            case 5: enemy_->InputFromAngelScript("crouch"); break;
-            case 6: enemy_->InputFromAngelScript("attack"); break;
-            case 7: enemy_->InputFromAngelScript("block"); break;
-            case 8: enemy_->InputFromAngelScript("throw"); break;
-            case 9: enemy_->InputFromAngelScript("grab"); break;
+            case 0: enemy_->ReceiveMessage("rl_forward"); break;
+            case 1: enemy_->ReceiveMessage("rl_back"); break;
+            case 2: enemy_->ReceiveMessage("rl_left"); break;
+            case 3: enemy_->ReceiveMessage("rl_right"); break;
+            case 4: enemy_->ReceiveMessage("rl_jump"); break;
+            case 5: enemy_->ReceiveMessage("rl_crouch"); break;
+            case 6: enemy_->ReceiveMessage("rl_attack"); break;
+            case 7: enemy_->ReceiveMessage("rl_block"); break;
+            case 8: enemy_->ReceiveMessage("rl_throw"); break;
+            case 9: enemy_->ReceiveMessage("rl_grab"); break;
         }
     }
 }
@@ -291,30 +295,30 @@ py::array_t<float> OvergrowthEnv::get_enemy_observation() const {
         obs.reserve(18);
         
         // 1. Self State (Enemy is "Self" here)
-        obs.push_back(enemy_->position.x);
-        obs.push_back(enemy_->position.y);
-        obs.push_back(enemy_->position.z);
-        obs.push_back(enemy_->velocity.x);
-        obs.push_back(enemy_->velocity.y);
-        obs.push_back(enemy_->velocity.z);
+        obs.push_back(enemy_->position.x());
+        obs.push_back(enemy_->position.y());
+        obs.push_back(enemy_->position.z());
+        obs.push_back(enemy_->velocity.x());
+        obs.push_back(enemy_->velocity.y());
+        obs.push_back(enemy_->velocity.z());
         obs.push_back(enemy_->GetTempHealth());
-        obs.push_back(enemy_->facing.x);
-        obs.push_back(enemy_->facing.y);
-        obs.push_back(enemy_->facing.z);
+        obs.push_back(enemy_->facing.x());
+        obs.push_back(enemy_->facing.y());
+        obs.push_back(enemy_->facing.z());
 
         // 2. Enemy State (NPC is "Enemy" here)
         // Relative Position (NPC - Enemy)
-        obs.push_back(npc_->position.x - enemy_->position.x);
-        obs.push_back(npc_->position.y - enemy_->position.y);
-        obs.push_back(npc_->position.z - enemy_->position.z);
+        obs.push_back(npc_->position.x() - enemy_->position.x());
+        obs.push_back(npc_->position.y() - enemy_->position.y());
+        obs.push_back(npc_->position.z() - enemy_->position.z());
         
         // Relative Velocity
-        obs.push_back(npc_->velocity.x - enemy_->velocity.x);
-        obs.push_back(npc_->velocity.y - enemy_->velocity.y);
-        obs.push_back(npc_->velocity.z - enemy_->velocity.z);
+        obs.push_back(npc_->velocity.x() - enemy_->velocity.x());
+        obs.push_back(npc_->velocity.y() - enemy_->velocity.y());
+        obs.push_back(npc_->velocity.z() - enemy_->velocity.z());
 
         // Distance
-        float dist = glm::distance(enemy_->position, npc_->position);
+        float dist = compute_distance(enemy_->position, npc_->position);
         obs.push_back(dist);
 
         // Enemy Health (NPC's health)
@@ -387,31 +391,31 @@ py::array_t<float> OvergrowthEnv::get_observation() const {
         obs.reserve(18);
         
         // 1. Self State (10 dims)
-        obs.push_back(npc_->position.x);
-        obs.push_back(npc_->position.y);
-        obs.push_back(npc_->position.z);
-        obs.push_back(npc_->velocity.x);
-        obs.push_back(npc_->velocity.y);
-        obs.push_back(npc_->velocity.z);
+        obs.push_back(npc_->position.x());
+        obs.push_back(npc_->position.y());
+        obs.push_back(npc_->position.z());
+        obs.push_back(npc_->velocity.x());
+        obs.push_back(npc_->velocity.y());
+        obs.push_back(npc_->velocity.z());
         obs.push_back(npc_->GetTempHealth());
-        obs.push_back(npc_->facing.x);
-        obs.push_back(npc_->facing.y);
-        obs.push_back(npc_->facing.z);
+        obs.push_back(npc_->facing.x());
+        obs.push_back(npc_->facing.y());
+        obs.push_back(npc_->facing.z());
 
         // 2. Enemy State (8 dims)
         if (enemy_) {
             // Relative Position
-            obs.push_back(enemy_->position.x - npc_->position.x);
-            obs.push_back(enemy_->position.y - npc_->position.y);
-            obs.push_back(enemy_->position.z - npc_->position.z);
+            obs.push_back(enemy_->position.x() - npc_->position.x());
+            obs.push_back(enemy_->position.y() - npc_->position.y());
+            obs.push_back(enemy_->position.z() - npc_->position.z());
             
             // Relative Velocity
-            obs.push_back(enemy_->velocity.x - npc_->velocity.x);
-            obs.push_back(enemy_->velocity.y - npc_->velocity.y);
-            obs.push_back(enemy_->velocity.z - npc_->velocity.z);
+            obs.push_back(enemy_->velocity.x() - npc_->velocity.x());
+            obs.push_back(enemy_->velocity.y() - npc_->velocity.y());
+            obs.push_back(enemy_->velocity.z() - npc_->velocity.z());
 
             // Distance
-            float dist = glm::distance(npc_->position, enemy_->position);
+            float dist = compute_distance(npc_->position, enemy_->position);
             obs.push_back(dist);
 
             // Enemy Health
@@ -442,7 +446,7 @@ float OvergrowthEnv::compute_reward(int action_id) {
         // 1. Damage Dealt (Positive)
         // Note: This requires tracking previous health. For now, we assume direct access or event-based.
         // Simplified: Reward for being close and attacking
-        float dist = glm::distance(npc_->position, enemy_->position);
+        float dist = compute_distance(npc_->position, enemy_->position);
         if (dist < 2.0f && action_id == 6) { // Attack action
             reward += 0.5f;
         }
@@ -474,16 +478,16 @@ void OvergrowthEnv::update_state(int action_id) {
         // Map actions to game inputs
         // This is a simplified mapping
         switch(action_id) {
-            case 0: npc_->InputFromAngelScript("forward"); break;
-            case 1: npc_->InputFromAngelScript("back"); break;
-            case 2: npc_->InputFromAngelScript("left"); break;
-            case 3: npc_->InputFromAngelScript("right"); break;
-            case 4: npc_->InputFromAngelScript("jump"); break;
-            case 5: npc_->InputFromAngelScript("crouch"); break;
-            case 6: npc_->InputFromAngelScript("attack"); break;
-            case 7: npc_->InputFromAngelScript("block"); break;
-            case 8: npc_->InputFromAngelScript("throw"); break;
-            case 9: npc_->InputFromAngelScript("grab"); break;
+            case 0: npc_->ReceiveMessage("rl_forward"); break;
+            case 1: npc_->ReceiveMessage("rl_back"); break;
+            case 2: npc_->ReceiveMessage("rl_left"); break;
+            case 3: npc_->ReceiveMessage("rl_right"); break;
+            case 4: npc_->ReceiveMessage("rl_jump"); break;
+            case 5: npc_->ReceiveMessage("rl_crouch"); break;
+            case 6: npc_->ReceiveMessage("rl_attack"); break;
+            case 7: npc_->ReceiveMessage("rl_block"); break;
+            case 8: npc_->ReceiveMessage("rl_throw"); break;
+            case 9: npc_->ReceiveMessage("rl_grab"); break;
             // ... add more mappings
         }
         return;

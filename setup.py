@@ -13,13 +13,13 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 eigen_include = os.path.join(script_dir, "build_rl", "_deps", "eigen-src")
 
 # Define the extension module
-source_dir = "overgrowth-main/Source/RL"
+source_dir = "Source/RL"
 sources = [
     os.path.join(source_dir, "og_env_bindings.cpp"),
     os.path.join(source_dir, "overgrowth_env.cpp"),
 ]
 
-include_dirs = [source_dir]
+include_dirs = [source_dir, "Source", "Libraries", "Libraries/tinyxml", "Libraries/glad/include", "Libraries/stb", "Libraries/binn-3.0/src", "Libraries/imgui-1.85", "Libraries/SDL2-2.0.20/include", "Libraries/SDL2_net-2.0.1/include", "Libraries/freetype-2.12.1/include", "Libraries/openal-soft-1.18.2-bin/include/AL", "Libraries/nlohmann_json/include", "Libraries/recastnavigation/Recast/Include", "Libraries/recastnavigation/Detour/Include", "Libraries/recastnavigation/DetourCrowd/Include", "Projects/bullet3-2.89/src", "Projects/angelscript_2_32_0_sdk/angelscript/include"]
 if os.path.exists(os.path.join(eigen_include, "Eigen", "Core")):
     include_dirs.append(eigen_include)
     print(f"Found Eigen at: {eigen_include}")

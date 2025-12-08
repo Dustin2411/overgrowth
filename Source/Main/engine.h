@@ -45,6 +45,13 @@
 #include <Network/asnetwork.h>
 #include <Internal/modloading.h>
 
+#ifdef OG_RL_BUILD
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
+#include <pybind11/stl.h>
+namespace py = pybind11;
+#endif
+
 #include <stack>
 #include <iostream>
 #include <mutex>

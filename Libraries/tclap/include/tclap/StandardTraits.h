@@ -124,7 +124,9 @@ struct ArgTraits<unsigned char> {
 };
 
 // Microsoft implements size_t awkwardly. 
-#if defined(_MSC_VER) && defined(_M_X64)
+// On x64, size_t is unsigned long long, which conflicts with the HAVE_LONG_LONG block below.
+// Only define this if HAVE_LONG_LONG is not defined (to avoid duplicate specialization)
+#if defined(_MSC_VER) && defined(_M_X64) && !defined(HAVE_LONG_LONG)
 /**
  * size_ts have value-like semantics.
  */

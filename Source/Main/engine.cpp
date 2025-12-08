@@ -140,6 +140,16 @@
 #include <algorithm>
 #include <limits>
 
+#ifdef OG_RL_BUILD
+#include <pybind11/embed.h>
+#include <pybind11/stl.h>
+namespace py = pybind11;
+static std::unique_ptr<py::scoped_interpreter> python_guard;
+static py::object g_run_in_game_module;
+static py::object g_get_action_func;
+static bool g_rl_initialized = false;
+#endif
+
 extern char imgui_ini_path[kPathSize];
 extern bool asdebugger_enabled;
 extern bool asprofiler_enabled;
@@ -777,6 +787,99 @@ void Engine::UpdateControls(float timestep, bool loading_screen) {
         input->ignore_mouse_frame = false;
 
         Input::Instance()->ProcessControllers(timestep);
+
+#ifdef OG_RL_BUILD
+        // Initialize RL on first use
+        static int rl_log_counter = 0;
+        if (!g_rl_initialized && scenegraph_) {
+            std::cout << "[RL] Attempting RL initialization..." << std::endl;
+            try {
+                if (!python_guard) {
+                    python_guard = std::make_unique<py::scoped_interpreter>();
+                    std::cout << "[RL] Python interpreter initialized" << std::endl;
+                }
+                py::module sys = py::module::import("sys");
+                sys.attr("path").attr("append")(".");
+                std::cout << "[RL] Importing run_in_game module..." << std::endl;
+                g_run_in_game_module = py::module::import("run_in_game");
+                py::object init_func = g_run_in_game_module.attr("init_model");
+                std::cout << "[RL] Calling init_model..." << std::endl;
+                bool success = init_func("ppo_overgrowth.zip").cast<bool>();
+                if (success) {
+                    std::cout << "[RL] Model loaded successfully!" << std::endl;
+                    g_get_action_func = g_run_in_game_module.attr("get_action_from_obs");
+                    g_rl_initialized = true;
+                } else {
+                    std::cerr << "[RL] init_model returned false" << std::endl;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[RL] Init Error: " << e.what() << std::endl;
+            }
+        }
+
+        // RL Inference Loop - control NPCs (non-player characters)
+        if (g_rl_initialized && scenegraph_) {
+            // Log periodically (every 300 frames ~ 5 seconds at 60fps)
+            if (rl_log_counter % 300 == 0) {
+                std::cout << "[RL] Frame " << rl_log_counter << ": Found " << scenegraph_->movement_objects_.size() << " movement objects" << std::endl;
+            }
+            
+            for (auto* obj : scenegraph_->movement_objects_) {
+                MovementObject* mo = static_cast<MovementObject*>(obj);
+                if (mo && !mo->is_player) { // Only control NPCs
+                    // Construct observation (10 values as per wrapper)
+                    std::vector<float> obs;
+                    obs.push_back(mo->position[0]); // x
+                    obs.push_back(mo->position[1]); // y
+                    obs.push_back(mo->position[2]); // z
+                    obs.push_back(mo->velocity[0]);
+                    obs.push_back(mo->velocity[1]);
+                    obs.push_back(mo->velocity[2]);
+                    obs.push_back(mo->GetTempHealth());
+                    vec3 facing = mo->GetFacing();
+                    obs.push_back(facing[0]);
+                    obs.push_back(facing[1]);
+                    obs.push_back(facing[2]);
+                    
+                    // Get Action from Python
+                    try {
+                        py::list obs_list;
+                        for (float val : obs) {
+                            obs_list.append(val);
+                        }
+                        int action = g_get_action_func(obs_list).cast<int>();
+                        
+                        // Log action periodically
+                        if (rl_log_counter % 300 == 0) {
+                            std::cout << "[RL] NPC action: " << action << " at pos (" 
+                                      << mo->position[0] << ", " 
+                                      << mo->position[1] << ", " 
+                                      << mo->position[2] << ")" << std::endl;
+                        }
+                        
+                        // Apply Action via ReceiveMessage
+                        switch(action) {
+                            case 0: mo->ReceiveMessage("rl_forward"); break;
+                            case 1: mo->ReceiveMessage("rl_back"); break;
+                            case 2: mo->ReceiveMessage("rl_left"); break;
+                            case 3: mo->ReceiveMessage("rl_right"); break;
+                            case 4: mo->ReceiveMessage("rl_jump"); break;
+                            case 5: mo->ReceiveMessage("rl_crouch"); break;
+                            case 6: mo->ReceiveMessage("rl_attack"); break;
+                            case 7: mo->ReceiveMessage("rl_block"); break;
+                            case 8: mo->ReceiveMessage("rl_throw"); break;
+                            case 9: mo->ReceiveMessage("rl_grab"); break;
+                        }
+                    } catch (const std::exception& e) {
+                        if (rl_log_counter % 300 == 0) {
+                            std::cerr << "[RL] Prediction error: " << e.what() << std::endl;
+                        }
+                    }
+                }
+            }
+            rl_log_counter++;
+        }
+#endif
         PlayerInput* controller = Input::Instance()->GetController(0);
         static const std::string kSlow = "slow";
         if (Input::Instance()->debug_keys && current_engine_state_.type == kEngineEditorLevelState) {
@@ -2214,6 +2317,11 @@ void Engine::Update() {
                 {
                     PROFILER_ZONE(g_profiler_ctx, "Level update");
                     scenegraph_->level->Update(paused);
+                    
+#ifdef OG_RL_BUILD
+                    // RL inference is handled in UpdateControls via python_guard - no-op here
+                    // (older python_bridge implementation removed to avoid conflicts)
+#endif
                 }
                 HandleRabbotToggleControls();
                 // Disposing of an object might in turn queue up more items
@@ -5882,6 +5990,11 @@ void Engine::GenerateLevelCache(ModInstance* mod_instance) {
 }
 
 void Engine::Initialize() {
+#ifdef OG_RL_BUILD
+    // RL initialization is handled in UpdateControls() when scenegraph is ready
+    // This ensures proper timing and avoids duplicate initialization
+    std::cout << "[OG_RL] RL build enabled - initialization deferred to UpdateControls()." << std::endl;
+#endif
     current_menu_player = -1;
     waiting_for_input_ = false;
     back_to_menu = false;
@@ -6573,3 +6686,4 @@ bool Engine::RequestedInterruptLoading() {
     loading_mutex_.unlock();
     return val;
 }
+

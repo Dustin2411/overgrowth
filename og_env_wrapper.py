@@ -18,11 +18,11 @@ class OvergrowthGymEnv(gym.Env):
         # Action space is Discrete(12)
         self.action_space = spaces.Discrete(12)
         
-        # Observation space is Box(18,)
+        # Observation space is Box(10,)
         self.observation_space = spaces.Box(
             low=-np.inf, 
             high=np.inf, 
-            shape=(18,), 
+            shape=(10,), 
             dtype=np.float32
         )
 
